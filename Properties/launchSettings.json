@@ -2,7 +2,7 @@
   "profiles": {
     "VideoScribeX": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\path\\to\\your\\video.mp4"
+      "commandLineArgs": "C:\\Users\\robin\\OneDrive\\Desktop\\dev\\Personal\\PodScribeX\\PodScribeX\\Media\\Video\\the-lean-startup-review-eric-ries.mp4"
     }
   }
 }
