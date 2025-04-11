@@ -1,0 +1,8 @@
+﻿{
+  "profiles": {
+    "VideoScribeX": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\path\\to\\your\\video.mp4"
+    }
+  }
+}
