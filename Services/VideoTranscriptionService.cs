@@ -58,7 +58,7 @@ public class VideoTranscriptionService
 
     public static string GetMediaAudioPath()
     {
-        string projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\.."));
+        string projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\.."));
         return Path.Combine(projectRoot, "Media", "Audio");
     }
 }
