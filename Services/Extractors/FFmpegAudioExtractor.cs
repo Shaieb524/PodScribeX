@@ -17,7 +17,7 @@ namespace PodScribeX.Services.Extractors
 
         public FFmpegAudioExtractor(IConfiguration configuration)
         {
-            _ffmpegPath = configuration["FFmpegSettings:Path"];
+            _ffmpegPath = configuration["FFmpegSettings:ExePath"];
             _inputFolder = configuration["FFmpegSettings:InputFolder"];
             _outputFolder = configuration["FFmpegSettings:OutputFolder"];
             _audioCodec = configuration["FFmpegSettings:AudioSettings:Codec"];
