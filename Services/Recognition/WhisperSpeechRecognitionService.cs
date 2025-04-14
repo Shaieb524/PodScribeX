@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using PodScribeX.Interfaces;
 
 namespace PodScribeX.Services.Recognition;
@@ -8,24 +9,29 @@ namespace PodScribeX.Services.Recognition;
 /// </summary>
 public class WhisperSpeechRecognitionService : ISpeechRecognitionService
 {
-    private readonly string _modelPath;
     private readonly string _whisperExecutablePath;
+    private readonly string _inputFolder;
+    private readonly string _outputFolder;
+    private readonly string _modelType;
 
-    public WhisperSpeechRecognitionService(string whisperExecutablePath, string modelPath)
+    public WhisperSpeechRecognitionService(IConfiguration configuration)
     {
-        _whisperExecutablePath = whisperExecutablePath ?? throw new ArgumentNullException(nameof(whisperExecutablePath));
-        _modelPath = modelPath ?? throw new ArgumentNullException(nameof(modelPath));
+        // TODO -> refac : Convert to options class
+        _whisperExecutablePath = configuration["WhisperSettings:ExePath"];
+        _inputFolder = configuration["WhisperSettings:InputFolder"];
+        _outputFolder = configuration["WhisperSettings:OutputFolder"];
+        _modelType = configuration["WhisperSettings:Model"];
     }
 
     public string ServiceName => "OpenAI Whisper (Local)";
 
     public bool RequiresInternet => false;
 
-    public async Task<string> TranscribeAudioAsync(string audioFilePath)
+    public async Task<string> TranscribeAudioAsync(string audioFileName)
     {
-        if (!File.Exists(audioFilePath))
+        if (!File.Exists(audioFileName))
         {
-            throw new FileNotFoundException("Audio file not found", audioFilePath);
+            throw new FileNotFoundException("Audio file not found", audioFileName);
         }
 
         try
@@ -35,7 +41,7 @@ public class WhisperSpeechRecognitionService : ISpeechRecognitionService
             var startInfo = new ProcessStartInfo
             {
                 FileName = _whisperExecutablePath,
-                Arguments = $"-m \"{_modelPath}\" -f \"{audioFilePath}\" -o \"{outputPath}\"",
+                Arguments = $"--model \"{_modelType}\" -f \"{_inputFolder}\\{audioFileName}\" -o \"{outputPath}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true
