@@ -1,4 +1,5 @@
 ﻿using PodScribeX.Interfaces;
+using PodScribeX.Utils;
 
 namespace PodScribeX.Services;
 
@@ -19,7 +20,7 @@ public class VideoTranscriptionService
     public async Task<string> TranscribeVideoAsync(string videoFilePath, string? tempAudioPath = null)
     {
         // Create temporary audio file path if not provided
-        tempAudioPath ??= Path.Combine(GetMediaAudioPath(), $"audio_{Guid.NewGuid()}.wav");
+        tempAudioPath ??= Path.Combine(OsHelper.GetMediaAudioPath(), $"audio_{Guid.NewGuid()}.wav");
 
         try
         {
@@ -56,9 +57,4 @@ public class VideoTranscriptionService
         Console.WriteLine($"Transcript saved to {outputFilePath}");
     }
 
-    public static string GetMediaAudioPath()
-    {
-        string projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\.."));
-        return Path.Combine(projectRoot, "Media", "Audio");
-    }
 }
