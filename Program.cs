@@ -1,4 +1,5 @@
-﻿using PodScribeX.Interfaces;
+﻿using Microsoft.Extensions.Configuration;
+using PodScribeX.Interfaces;
 using PodScribeX.Services;
 using PodScribeX.Services.Extractors;
 using PodScribeX.Services.Recognition;
@@ -12,24 +13,40 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        Console.WriteLine("PodScribeX - Convert Videos to Text");
-        Console.WriteLine("=====================================");
+        // Build configuration
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
 
-        if (args.Length < 1)
+        // Parse command line arguments
+        string videoPath = args.Length > 0 ? args[0] : "the-lean-startup-review-eric-ries.mp4";
+        string outputPath = args.Length > 1 ? args[1] : Path.ChangeExtension(videoPath, ".txt");
+
+        // Create extractor with configuration
+        var audioExtractor = new FFmpegAudioExtractor(configuration);
+
+        // Create a speech recognition service (you need to implement or choose one)
+        ISpeechRecognitionService speechService = new SubtitleExtractionService(); // Replace with appropriate implementation
+
+        // Create the transcription service
+        var transcriptionService = new VideoTranscriptionService(audioExtractor, speechService);
+
+        Console.WriteLine($"Processing video: {videoPath}");
+
+        try
         {
-            Console.WriteLine("Usage: PodScribeX.exe <videoPath> [outputPath]");
-            return;
+            // Transcribe the video directly (this handles extraction internally)
+            string transcript = await transcriptionService.TranscribeVideoAsync(videoPath);
+
+            // Save the transcript
+            await transcriptionService.SaveTranscriptToFileAsync(transcript, outputPath);
+
+            Console.WriteLine($"Transcription completed successfully. Output saved to {outputPath}");
         }
-
-        string videoPath = args[0];
-        string outputPath = args.Length > 1 ? args[1] : Path.ChangeExtension(videoPath, ".wav");
-
-        // Create audio extractor
-        var audioExtractor = new FFmpegAudioExtractor("C:\\Users\\robin\\OneDrive\\Desktop\\dev\\Personal\\PodScribeX\\PodScribeX\\ThirdParties\\ffmpeg.exe");
-
-        await audioExtractor.ExtractAudioAsync(videoPath, outputPath);
-
-        Console.WriteLine("Doneeee");
-
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during transcription: {ex.Message}");
+        }
     }
 }
