@@ -19,7 +19,7 @@ public class VideoTranscriptionService
     public async Task<string> TranscribeVideoAsync(string videoFilePath, string? tempAudioPath = null)
     {
         // Create temporary audio file path if not provided
-        tempAudioPath ??= Path.Combine(Path.GetTempPath(), $"audio_{Guid.NewGuid()}.wav");
+        tempAudioPath ??= Path.Combine(GetMediaAudioPath(), $"audio_{Guid.NewGuid()}.wav");
 
         try
         {
@@ -54,5 +54,11 @@ public class VideoTranscriptionService
     {
         await File.WriteAllTextAsync(outputFilePath, transcript);
         Console.WriteLine($"Transcript saved to {outputFilePath}");
+    }
+
+    public static string GetMediaAudioPath()
+    {
+        string projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\.."));
+        return Path.Combine(projectRoot, "Media", "Audio");
     }
 }
