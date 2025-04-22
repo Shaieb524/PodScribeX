@@ -56,9 +56,14 @@ namespace PodScribeX.Services.Extractors
                     RedirectStandardError = true
                 };
 
+                Console.WriteLine("Starting FFmpeg ExtractAudio process...");
+                
                 using var process = Process.Start(startInfo)
                     ?? throw new InvalidOperationException("Failed to start FFmpeg process");
                 await process.WaitForExitAsync();
+
+                Console.WriteLine("FFmpeg ExtractAudio process completed.");
+
                 return process.ExitCode == 0 && File.Exists(outputAudioPath);
             }
             catch (Exception ex)
