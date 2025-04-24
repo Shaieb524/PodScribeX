@@ -103,20 +103,37 @@ class Program
         try
         {
             var audioExtractor = new FFmpegAudioExtractor(configuration);
+
+            // Subscribe to progress updates
+            // and receive updates from FFmpeg class
+            audioExtractor.ProgressUpdated += (sender, message) => 
+            {
+                Console.WriteLine($"Process VideoToAudio - {message}");
+            };
+            
+            Console.WriteLine("Starting audio extraction...");
+            Console.WriteLine("This may take a while depending on the video size...");
+            
             bool result = await audioExtractor.ExtractAudioAsync(videoFile);
             
             if (result)
             {
-                Console.WriteLine($"Audio extraction completed successfully! Audio saved to: {audioPath}");
+                Console.WriteLine($"Audio extraction completed successfully!");
+                Console.WriteLine($"Audio saved to: {audioPath}");
             }
             else
             {
-                Console.WriteLine("Audio extraction failed. Please check the logs for details.");
+                Console.WriteLine("Audio extraction failed. See above logs for details.");
             }
+            
+            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.ReadKey();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.ReadKey();
         }
     }
 
