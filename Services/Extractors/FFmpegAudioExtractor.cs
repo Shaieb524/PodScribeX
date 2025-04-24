@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -15,8 +16,11 @@ namespace PodScribeX.Services.Extractors
         private readonly int _sampleRate;
         private readonly int _channels;
 
+        public event EventHandler<string> ProgressUpdated;
+
         public FFmpegAudioExtractor(IConfiguration configuration)
         {
+            // TODO -> refac : Convert to options class 
             _ffmpegPath = configuration["FFmpegSettings:ExePath"];
             _inputFolder = configuration["FFmpegSettings:InputFolder"];
             _outputFolder = configuration["FFmpegSettings:OutputFolder"];
@@ -29,10 +33,14 @@ namespace PodScribeX.Services.Extractors
 
         public async Task<bool> ExtractAudioAsync(string videoFileName, string outputAudioFileName = null)
         {
+            // Notify progress
+            OnProgressUpdated("Starting audio extraction process...");
+            
             string videoFilePath = Path.Combine(_inputFolder, videoFileName);
 
             if (!File.Exists(videoFilePath))
             {
+                OnProgressUpdated($"Error: Video file not found at {videoFilePath}");
                 throw new FileNotFoundException("Video file not found", videoFilePath);
             }
 
@@ -43,6 +51,7 @@ namespace PodScribeX.Services.Extractors
             }
 
             string outputAudioPath = Path.Combine(_outputFolder, outputAudioFileName);
+            OnProgressUpdated($"Output audio will be saved to: {outputAudioPath}");
 
             try
             {
@@ -52,19 +61,54 @@ namespace PodScribeX.Services.Extractors
                     Arguments = $"-i \"{videoFilePath}\" -vn -acodec {_audioCodec} -ar {_sampleRate} -ac {_channels} \"{outputAudioPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,
+                    RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
 
+                OnProgressUpdated("Starting FFmpeg process...");
+                
                 using var process = Process.Start(startInfo)
                     ?? throw new InvalidOperationException("Failed to start FFmpeg process");
+                
+                // Capture and report FFmpeg output
+                process.ErrorDataReceived += (sender, args) => 
+                {
+                    if (!string.IsNullOrEmpty(args.Data))
+                    {
+                        OnProgressUpdated($"FFmpeg: {args.Data}");
+                    }
+                };
+                
+                process.BeginErrorReadLine();
+                
+                // Wait for process completion
                 await process.WaitForExitAsync();
-                return process.ExitCode == 0 && File.Exists(outputAudioPath);
+                
+                bool success = process.ExitCode == 0 && File.Exists(outputAudioPath);
+                
+                if (success)
+                {
+                    OnProgressUpdated("Audio extraction completed successfully!");
+                }
+                else
+                {
+                    OnProgressUpdated($"Audio extraction failed with exit code: {process.ExitCode}");
+                }
+                
+                return success;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error extracting audio: {ex.Message}");
+                OnProgressUpdated($"Error extracting audio: {ex.Message}");
                 return false;
             }
+        }
+        
+        // Raise the progress event (publish event)
+        protected virtual void OnProgressUpdated(string message)
+        {
+            ProgressUpdated?.Invoke(this, message);
+            Console.WriteLine(message); 
         }
     }
 }

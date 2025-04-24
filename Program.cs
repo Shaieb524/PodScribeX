@@ -3,6 +3,10 @@ using PodScribeX.Interfaces;
 using PodScribeX.Services;
 using PodScribeX.Services.Extractors;
 using PodScribeX.Services.Recognition;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace PodScribeX;
 
@@ -19,34 +23,137 @@ class Program
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 
-        // Parse command line arguments
-        string videoPath = args.Length > 0 ? args[0] : "the-lean-startup-review-eric-ries.mp4";
-        string outputPath = args.Length > 1 ? args[1] : Path.ChangeExtension(videoPath, ".txt");
+        Console.WriteLine("Welcome to PodScribeX!");
+        Console.WriteLine("====================");
+        Console.WriteLine("Please select an option:");
+        Console.WriteLine("1. Audio to Script - Convert audio file to text");
+        Console.WriteLine("2. Video to Script - Convert video file to text");
+        Console.WriteLine("3. Video to Audio - Extract audio from video");
+        Console.WriteLine("4. Video to Audio to Script - Convert video to audio and text");
+        Console.Write("Enter your choice (1-4): ");
 
-        // Create extractor with configuration
-        var audioExtractor = new FFmpegAudioExtractor(configuration);
+        string choice = Console.ReadLine();
 
-        // Create a speech recognition service (you need to implement or choose one)
-        ISpeechRecognitionService speechService = new SubtitleExtractionService(); // Replace with appropriate implementation
+        switch (choice)
+        {
+            case "1":
+                await ProcessAudioToScript(configuration);
+                break;
+            case "2":
+                await ProcessVideoToScript(configuration);
+                break;
+            case "3":
+                await ProcessVideoToAudio(configuration);
+                break;
+            case "4":
+                await ProcessVideoToAudioToScript(configuration);
+                break;
+            default:
+                Console.WriteLine("Invalid choice. Exiting...");
+                break;
+        }
+    }
 
-        // Create the transcription service
-        var transcriptionService = new VideoTranscriptionService(audioExtractor, speechService);
+    private static async Task ProcessAudioToScript(IConfiguration configuration)
+    {
+        Console.WriteLine("\nAudio to Script Conversion");
+        Console.WriteLine("------------------------");
+        Console.WriteLine("Note: Audio files should be in the Media/Audio directory");
+        Console.Write("Enter audio filename: ");
+        
+        string audioFile = Console.ReadLine();
+        string audioPath = Path.Combine("Media", "Audio", audioFile);
+        string outputPath = Path.Combine("Media", "Script", Path.ChangeExtension(audioFile, ".txt"));
+        
+        Console.WriteLine($"Processing audio file: {audioPath}");
+        Console.WriteLine($"Output will be saved to: {outputPath}");
+        Console.WriteLine("Not implemented yet. Coming soon!");
+    }
 
-        Console.WriteLine($"Processing video: {videoPath}");
+    private static async Task ProcessVideoToScript(IConfiguration configuration)
+    {
+        Console.WriteLine("\nVideo to Script Conversion");
+        Console.WriteLine("------------------------");
+        Console.WriteLine("Note: Video files should be in the Media/Video directory");
+        Console.Write("Enter video filename: ");
+        
+        string videoFile = Console.ReadLine();
+        string videoPath = Path.Combine("Media", "Video", videoFile);
+        string outputPath = Path.Combine("Media", "Script", Path.ChangeExtension(videoFile, ".txt"));
+        
+        Console.WriteLine($"Processing video file: {videoPath}");
+        Console.WriteLine($"Output will be saved to: {outputPath}");
+        Console.WriteLine("Not implemented yet. Coming soon!");
+    }
 
+    private static async Task ProcessVideoToAudio(IConfiguration configuration)
+    {
+        Console.WriteLine("\nVideo to Audio Conversion");
+        Console.WriteLine("------------------------");
+        Console.WriteLine("Note: Video files should be in the Media/Video directory");
+        Console.Write("Enter video filename: ");
+        
+        string videoFile = Console.ReadLine();
+        string videoPath = Path.Combine("Media", "Video", videoFile);
+        string audioPath = Path.Combine("Media", "Audio", Path.ChangeExtension(videoFile, ".wav"));
+        
+        Console.WriteLine($"Processing video file: {videoPath}");
+        Console.WriteLine($"Audio will be extracted to: {audioPath}");
+        
         try
         {
-            // Transcribe the video directly (this handles extraction internally)
-            string transcript = await transcriptionService.TranscribeVideoAsync(videoPath);
+            var audioExtractor = new FFmpegAudioExtractor(configuration);
 
-            // Save the transcript
-            await transcriptionService.SaveTranscriptToFileAsync(transcript, outputPath);
-
-            Console.WriteLine($"Transcription completed successfully. Output saved to {outputPath}");
+            // Subscribe to progress updates
+            // and receive updates from FFmpeg class
+            audioExtractor.ProgressUpdated += (sender, message) => 
+            {
+                Console.WriteLine($"Process VideoToAudio - {message}");
+            };
+            
+            Console.WriteLine("Starting audio extraction...");
+            Console.WriteLine("This may take a while depending on the video size...");
+            
+            bool result = await audioExtractor.ExtractAudioAsync(videoFile);
+            
+            if (result)
+            {
+                Console.WriteLine($"Audio extraction completed successfully!");
+                Console.WriteLine($"Audio saved to: {audioPath}");
+            }
+            else
+            {
+                Console.WriteLine("Audio extraction failed. See above logs for details.");
+            }
+            
+            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.ReadKey();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during transcription: {ex.Message}");
+            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.ReadKey();
         }
     }
+
+    private static async Task ProcessVideoToAudioToScript(IConfiguration configuration)
+    {
+        Console.WriteLine("\nVideo to Audio to Script Conversion");
+        Console.WriteLine("----------------------------------");
+        Console.WriteLine("Note: Video files should be in the Media/Video directory");
+        Console.Write("Enter video filename: ");
+
+        string videoFile = Console.ReadLine();
+        string videoPath = Path.Combine("Media", "Video", videoFile);
+        string audioPath = Path.Combine("Media", "Audio", Path.ChangeExtension(videoFile, ".wav"));
+        string outputPath = Path.Combine("Media", "Script", Path.ChangeExtension(videoFile, ".txt"));
+
+        Console.WriteLine($"Processing video file: {videoPath}");
+        Console.WriteLine($"Audio will be extracted to: {audioPath}");
+        Console.WriteLine($"Script will be saved to: {outputPath}");
+        Console.WriteLine("Not implemented yet. Coming soon!");
+    }
+
+
 }

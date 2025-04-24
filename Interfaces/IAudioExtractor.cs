@@ -1,4 +1,7 @@
 ﻿
+using System;
+using System.Threading.Tasks;
+
 namespace PodScribeX.Interfaces;
 
 /// <summary>
@@ -12,5 +15,10 @@ public interface IAudioExtractor
     /// <param name="videoFilePath">Path to the video file</param>
     /// <param name="outputAudioPath">Path where audio will be saved</param>
     /// <returns>True if extraction was successful</returns>
-    Task<bool> ExtractAudioAsync(string videoFilePath, string outputAudioPath);
+    Task<bool> ExtractAudioAsync(string videoFilePath, string outputAudioPath = null);
+    
+    /// <summary>
+    /// Event that reports progress during audio extraction
+    /// </summary>
+    event EventHandler<string> ProgressUpdated;
 }
