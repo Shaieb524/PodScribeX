@@ -1,12 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using PodScribeX.Interfaces;
-using PodScribeX.Services;
 using PodScribeX.Services.Extractors;
-using PodScribeX.Services.Recognition;
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace PodScribeX;
 
