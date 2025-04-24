@@ -27,21 +27,29 @@ public class WhisperSpeechRecognitionService : ISpeechRecognitionService
 
     public bool RequiresInternet => false;
 
-    public async Task<string> TranscribeAudioAsync(string audioFileName)
+    public async Task<string> TranscribeAudioAsync(string audioFileName, string outputAudioFileName = null)
     {
-        if (!File.Exists(audioFileName))
+        string audioFilePath = Path.Combine(_inputFolder, audioFileName);
+
+        if (!File.Exists(audioFilePath))
         {
             throw new FileNotFoundException("Audio file not found", audioFileName);
         }
 
         try
         {
-            string outputPath = Path.Combine(Path.GetTempPath(), $"whisper_output_{Guid.NewGuid()}.txt");
+
+            if (string.IsNullOrEmpty(outputAudioFileName))
+            {
+                outputAudioFileName = Path.GetFileNameWithoutExtension(audioFileName) + ".txt";
+            }
+
+            string outputFilePath = Path.Combine(_outputFolder, outputAudioFileName);
 
             var startInfo = new ProcessStartInfo
             {
                 FileName = _whisperExecutablePath,
-                Arguments = $"--model \"{_modelType}\" -f \"{_inputFolder}\\{audioFileName}\" -o \"{outputPath}\"",
+                Arguments = $"\"{audioFilePath}\" --model \"{_modelType}\" -o \"{outputFilePath}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true
@@ -52,10 +60,10 @@ public class WhisperSpeechRecognitionService : ISpeechRecognitionService
 
             await process.WaitForExitAsync();
 
-            if (File.Exists(outputPath))
+            if (File.Exists(outputFilePath))
             {
-                string result = await File.ReadAllTextAsync(outputPath);
-                File.Delete(outputPath);
+                string result = await File.ReadAllTextAsync(outputFilePath);
+                //File.Delete(outputFilePath);
                 return result;
             }
 

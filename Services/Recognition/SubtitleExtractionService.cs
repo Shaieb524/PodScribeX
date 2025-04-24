@@ -25,6 +25,10 @@ public class SubtitleExtractionService : ISpeechRecognitionService
         // However, we need to implement it as part of the interface
         return "This method should not be called for subtitle extraction";
     }
+    public Task<string> TranscribeAudioAsync(string audioFilePath, string? outputFilePath)
+    {
+        throw new NotImplementedException();
+    }
 
     public async Task<string> ExtractSubtitlesFromVideoAsync(string videoFilePath)
     {
@@ -101,4 +105,6 @@ public class SubtitleExtractionService : ISpeechRecognitionService
 
         return string.Join("\n", textLines);
     }
+
+
 }
