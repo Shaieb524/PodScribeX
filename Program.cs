@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using PodScribeX.Interfaces;
 using PodScribeX.Services.Extractors;
 
 namespace PodScribeX;
@@ -64,7 +65,13 @@ class Program
         try
         {
             var whisperService = new PodScribeX.Services.Recognition.WhisperSpeechRecognitionService(configuration);
-            
+
+            whisperService.ProgressUpdated += (sender, message) =>
+            {
+                Console.WriteLine($"ProcessAudioToScript - {message}");
+            };
+
+
             Console.WriteLine($"Using speech recognition service: {whisperService.ServiceName}");
             Console.WriteLine("Starting transcription...");
             Console.WriteLine("This may take a while depending on the audio length...");
