@@ -11,7 +11,7 @@ public interface ISpeechRecognitionService
     /// </summary>
     /// <param name="audioFilePath">Path to the audio file</param>
     /// <returns>Transcribed text</returns>
-    Task<string> TranscribeAudioAsync(string audioFilePath);
+    Task<string> TranscribeAudioAsync(string audioFilePath, string? outputFilePath);
 
     /// <summary>
     /// Gets the name of the recognition service

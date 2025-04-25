@@ -36,7 +36,7 @@ public class VideoTranscriptionService
             Console.WriteLine($"Transcribing audio using {_speechRecognitionService.ServiceName}...");
 
             // Transcribe the audio
-            string transcript = await _speechRecognitionService.TranscribeAudioAsync(tempAudioPath);
+            string transcript = await _speechRecognitionService.TranscribeAudioAsync(tempAudioPath, null);
 
             return transcript;
         }

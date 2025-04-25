@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using PodScribeX.Interfaces;
 using PodScribeX.Services.Extractors;
 
 namespace PodScribeX;
@@ -60,7 +61,49 @@ class Program
         
         Console.WriteLine($"Processing audio file: {audioPath}");
         Console.WriteLine($"Output will be saved to: {outputPath}");
-        Console.WriteLine("Not implemented yet. Coming soon!");
+        
+        try
+        {
+            var whisperService = new PodScribeX.Services.Recognition.WhisperSpeechRecognitionService(configuration);
+
+            whisperService.ProgressUpdated += (sender, message) =>
+            {
+                Console.WriteLine($"ProcessAudioToScript - {message}");
+            };
+
+
+            Console.WriteLine($"Using speech recognition service: {whisperService.ServiceName}");
+            Console.WriteLine("Starting transcription...");
+            Console.WriteLine("This may take a while depending on the audio length...");
+
+            // TODO pass audioPath as configs 
+            string transcription = await whisperService.TranscribeAudioAsync(audioFile);
+            
+            if (!string.IsNullOrEmpty(transcription) && !transcription.StartsWith("Error:"))
+            {
+                // Ensure directory exists
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+                
+                // Save transcript to file
+                await File.WriteAllTextAsync(outputPath, transcription);
+                
+                Console.WriteLine($"Transcription completed successfully!");
+                Console.WriteLine($"Script saved to: {outputPath}");
+            }
+            else
+            {
+                Console.WriteLine($"Transcription failed: {transcription}");
+            }
+            
+            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.ReadKey();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.ReadKey();
+        }
     }
 
     private static async Task ProcessVideoToScript(IConfiguration configuration)

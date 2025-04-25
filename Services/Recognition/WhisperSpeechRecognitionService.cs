@@ -1,4 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using PodScribeX.Interfaces;
 
@@ -14,6 +17,8 @@ public class WhisperSpeechRecognitionService : ISpeechRecognitionService
     private readonly string _outputFolder;
     private readonly string _modelType;
 
+    public event EventHandler<string> ProgressUpdated;
+
     public WhisperSpeechRecognitionService(IConfiguration configuration)
     {
         // TODO -> refac : Convert to options class
@@ -21,50 +26,103 @@ public class WhisperSpeechRecognitionService : ISpeechRecognitionService
         _inputFolder = configuration["WhisperSettings:InputFolder"];
         _outputFolder = configuration["WhisperSettings:OutputFolder"];
         _modelType = configuration["WhisperSettings:Model"];
+
     }
 
     public string ServiceName => "OpenAI Whisper (Local)";
 
     public bool RequiresInternet => false;
 
-    public async Task<string> TranscribeAudioAsync(string audioFileName)
+    public async Task<string> TranscribeAudioAsync(string audioFileName, string outputAudioFileName = null)
     {
-        if (!File.Exists(audioFileName))
+        // Notify progress
+        OnProgressUpdated("Starting audio transcription process...");
+
+        string audioFilePath = Path.Combine(_inputFolder, audioFileName);
+
+        if (!File.Exists(audioFilePath))
         {
+            OnProgressUpdated($"Error: Audio file not found at {audioFilePath}");
             throw new FileNotFoundException("Audio file not found", audioFileName);
         }
 
         try
         {
-            string outputPath = Path.Combine(Path.GetTempPath(), $"whisper_output_{Guid.NewGuid()}.txt");
+            if (string.IsNullOrEmpty(outputAudioFileName))
+            {
+                outputAudioFileName = Path.GetFileNameWithoutExtension(audioFileName) + ".txt";
+            }
+
+            string outputFilePath = Path.Combine(_outputFolder, outputAudioFileName);
+            OnProgressUpdated($"Output transcript will be saved to: {outputFilePath}");
+
+            // For some stupid readon, the output folder must not have a trailing backslash coz it is adding quotation to the cmd 
+            string clnOutputFolder = _outputFolder.TrimEnd('\\');
 
             var startInfo = new ProcessStartInfo
             {
                 FileName = _whisperExecutablePath,
-                Arguments = $"--model \"{_modelType}\" -f \"{_inputFolder}\\{audioFileName}\" -o \"{outputPath}\"",
+                Arguments = $"\"{audioFilePath}\" --model \"{_modelType}\" -o \"{clnOutputFolder}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                RedirectStandardOutput = true
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
+
+            OnProgressUpdated("Starting Whisper transcription process...");
 
             using var process = Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Failed to start Whisper process");
 
+            // Capture and report Whisper output
+            process.OutputDataReceived += (sender, args) =>
+            {
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    OnProgressUpdated($"Whisper: {args.Data}");
+                }
+            };
+
+            process.ErrorDataReceived += (sender, args) =>
+            {
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    OnProgressUpdated($"Whisper Error: {args.Data}");
+                }
+            };
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            // Wait for process completion
             await process.WaitForExitAsync();
 
-            if (File.Exists(outputPath))
+            bool success = process.ExitCode == 0 && File.Exists(outputFilePath);
+
+            if (success)
             {
-                string result = await File.ReadAllTextAsync(outputPath);
-                File.Delete(outputPath);
+                OnProgressUpdated("Transcription completed successfully!");
+                string result = await File.ReadAllTextAsync(outputFilePath);
+                //File.Delete(outputFilePath);
                 return result;
             }
-
-            return "Failed to get output from Whisper";
+            else
+            {
+                OnProgressUpdated($"Transcription failed with exit code: {process.ExitCode}");
+                return "Failed to get output from Whisper";
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during Whisper transcription: {ex.Message}");
+            OnProgressUpdated($"Error during Whisper transcription: {ex.Message}");
             return $"Error: {ex.Message}";
         }
+    }
+
+    // Raise the progress event (publish event)
+    protected virtual void OnProgressUpdated(string message)
+    {
+        ProgressUpdated?.Invoke(this, message);
+        Console.WriteLine(message);
     }
 }
